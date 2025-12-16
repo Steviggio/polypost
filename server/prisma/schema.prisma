@@ -1,0 +1,66 @@
+// schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Enum pour l'état du pipeline
+enum PostStatus {
+  DRAFT
+  PROCESSING // En file d'attente ou en cours de génération
+  COMPLETED  // Traduction terminée
+  FAILED
+}
+
+// Enum pour les langues cibles
+enum Language {
+  EN // Anglais
+  ES // Espagnol
+  PT // Portugais
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique // ID venant de Clerk
+  email     String   @unique
+  stripeId  String?  // ID Client Stripe
+  createdAt DateTime @default(now())
+  
+  posts     Post[]
+
+  @@index([clerkId])
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  originalContent String @db.Text // Le texte en Français
+  status      PostStatus @default(DRAFT)
+  
+  // Relation User (Multi-tenant)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  // Les variations générées
+  translations Translation[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId]) // Vital pour la performance des requêtes par utilisateur
+}
+
+model Translation {
+  id          String   @id @default(uuid())
+  language    Language
+  content     String   @db.Text // Le contenu adapté pour LinkedIn
+  
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+}
