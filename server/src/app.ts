@@ -3,6 +3,11 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { requireAuth, syncUserToDb } from "./middlewares/auth.middleware";
 import { PrismaClient } from "@prisma/client";
+import { Mistral } from "@mistralai/mistralai";
+
+const mistral = new Mistral({
+  apiKey: process.env.MISTRAL_API_KEY || "",
+});
 
 const prisma = new PrismaClient();
 dotenv.config();
@@ -37,33 +42,92 @@ app.listen(PORT, () => {
 
 app.post("/api/posts", requireAuth, async (req, res) => {
   try {
-    const { content } = req.body; 
-    const clerkId = "user_36yocvzkoMTJ1SUzWl5Z5S4GHFp"; 
+    const { content } = req.body;
+    const clerkId = req.auth.userId;
 
-    if (!content) {
-      return res.status(400).json({ error: "Le contenu est requis" });
-    }
+    if (!content) return res.status(400).json({ error: "Contenu requis" });
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: clerkId },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: "Utilisateur introuvable en base" });
-    }
+    // --- Récupération User & Création Post (Identique à avant) ---
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user)
+      return res.status(404).json({ error: "Utilisateur introuvable" });
 
     const newPost = await prisma.post.create({
       data: {
         originalContent: content,
-        userId: user.id, 
-        status: "DRAFT",
+        userId: user.id,
+        status: "PROCESSING",
       },
     });
 
-    res.status(201).json(newPost);
+    // --- Appel à Mistral AI ---
+
+    // On garde le même prompt, Mistral le comprend très bien
+    const prompt = `
+      Tu es un expert LinkedIn multilingue.
+      Adapte le message suivant pour LinkedIn en 3 langues : Anglais (EN), Espagnol (ES) et Portugais (PT).
+      Le ton doit être professionnel et engageant.
+      
+      Message original : "${content}"
+      
+      Réponds UNIQUEMENT avec un objet JSON au format suivant :
+      {
+        "EN": "Le texte en anglais...",
+        "ES": "Le texte en espagnol...",
+        "PT": "Le texte en portugais..."
+      }
+    `;
+
+    const chatResponse = await mistral.chat.complete({
+      model: "mistral-small-latest", // Modèle rapide et efficace pour le JSON
+      messages: [{ role: "user", content: prompt }],
+      responseFormat: { type: "json_object" }, // Force le mode JSON (très utile !)
+    });
+
+    // 4. Parsing de la réponse (Sécurisé)
+    const messageContent = chatResponse.choices?.[0].message.content;
+
+    let rawContent = "";
+
+    if (typeof messageContent === "string") {
+      // Cas standard : c'est du texte
+      rawContent = messageContent;
+    } else if (Array.isArray(messageContent)) {
+      // Cas complexe (ContentChunk[]) : on recolle les morceaux de texte s'il y en a
+      // (TypeScript sera content car on gère le tableau)
+      rawContent = messageContent
+        .map((chunk) => {
+          if ("text" in chunk) return chunk.text; // Si le chunk a du texte
+          return "";
+        })
+        .join("");
+    }
+
+    if (!rawContent) {
+      throw new Error("Mistral a renvoyé une réponse vide.");
+    }
+
+    const aiResponse = JSON.parse(rawContent);
+    console.log("🤖 MISTRAL A RÉPONDU :", aiResponse);
+    // --- Sauvegarde en BDD (Identique à avant) ---
+    await prisma.translation.createMany({
+      data: [
+        { language: "EN", content: aiResponse.EN, postId: newPost.id },
+        { language: "ES", content: aiResponse.ES, postId: newPost.id },
+        { language: "PT", content: aiResponse.PT, postId: newPost.id },
+      ],
+    });
+
+    const finalPost = await prisma.post.update({
+      where: { id: newPost.id },
+      data: { status: "COMPLETED" },
+      include: { translations: true },
+    });
+
+    res.status(201).json(finalPost);
   } catch (error) {
-    console.error("Erreur création post:", error);
-    res.status(500).json({ error: "Erreur lors de la création du post" });
+    console.error("Erreur Mistral/Backend:", error);
+    res.status(500).json({ error: "Erreur lors de la génération avec l'IA" });
   }
 });
 
@@ -84,7 +148,7 @@ app.get("/api/posts", requireAuth, async (req, res) => {
         userId: user.id,
       },
       orderBy: {
-        createdAt: "desc", 
+        createdAt: "desc",
       },
     });
 
