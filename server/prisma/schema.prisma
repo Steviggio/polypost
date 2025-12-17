@@ -1,5 +1,3 @@
-// schema.prisma
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -9,7 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Enum pour l'état du pipeline
 enum PostStatus {
   DRAFT
   PROCESSING // En file d'attente ou en cours de génération
@@ -17,7 +14,6 @@ enum PostStatus {
   FAILED
 }
 
-// Enum pour les langues cibles
 enum Language {
   EN // Anglais
   ES // Espagnol
