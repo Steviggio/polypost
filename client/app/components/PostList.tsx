@@ -59,22 +59,18 @@ export default function PostList() {
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        // 2. Remplace la div extérieure par un Link
         <Link
           href={`/posts/${post.id}`}
           key={post.id}
-          className="block group" // "block" pour prendre la largeur, "group" pour les effets hover
+          className="block group" 
         >
           <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 group-hover:shadow-md group-hover:border-blue-300 transition-all cursor-pointer">
-            {/* ... Le contenu intérieur reste IDENTIQUE ... */}
             <div className="flex justify-between items-start mb-2">
-              {/* ... tes spans de statut ... */}
             </div>
             <p className="text-gray-800 whitespace-pre-wrap">
               {post.originalContent}
             </p>
 
-            {/* Petit indicateur visuel en plus */}
             <div className="mt-3 text-right">
               <span className="text-xs text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                 Voir les traductions →

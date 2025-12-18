@@ -1,4 +1,3 @@
-// app/posts/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -21,7 +20,7 @@ interface PostDetail {
 }
 
 export default function PostDetailPage() {
-  const { id } = useParams(); // On récupère l'ID depuis l'URL
+  const { id } = useParams(); 
   const { getToken } = useAuth();
   const router = useRouter();
 
@@ -45,7 +44,7 @@ export default function PostDetailPage() {
         setPost(data);
       } catch (error) {
         console.error(error);
-        router.push("/"); // Redirection si erreur
+        router.push("/"); 
       } finally {
         setLoading(false);
       }
@@ -61,7 +60,6 @@ export default function PostDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Bouton retour */}
         <Link
           href="/"
           className="text-blue-600 hover:underline mb-6 inline-block"
@@ -69,7 +67,6 @@ export default function PostDetailPage() {
           ← Retour au tableau de bord
         </Link>
 
-        {/* Section Post Original */}
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-8">
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
             Original (Français)
@@ -79,7 +76,6 @@ export default function PostDetailPage() {
           </p>
         </div>
 
-        {/* Grille des traductions */}
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           Traductions IA
         </h2>
@@ -90,7 +86,6 @@ export default function PostDetailPage() {
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* On trie pour avoir toujours le même ordre EN -> ES -> PT */}
             {post.translations
               .sort((a, b) => a.language.localeCompare(b.language))
               .map((t) => (

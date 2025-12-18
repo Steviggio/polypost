@@ -47,7 +47,6 @@ app.post("/api/posts", requireAuth, async (req, res) => {
 
     if (!content) return res.status(400).json({ error: "Contenu requis" });
 
-    // --- Récupération User & Création Post (Identique à avant) ---
     const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user)
       return res.status(404).json({ error: "Utilisateur introuvable" });
@@ -60,9 +59,6 @@ app.post("/api/posts", requireAuth, async (req, res) => {
       },
     });
 
-    // --- Appel à Mistral AI ---
-
-    // On garde le même prompt, Mistral le comprend très bien
     const prompt = `
       Tu es un expert LinkedIn multilingue.
       Adapte le message suivant pour LinkedIn en 3 langues : Anglais (EN), Espagnol (ES) et Portugais (PT).
@@ -79,25 +75,21 @@ app.post("/api/posts", requireAuth, async (req, res) => {
     `;
 
     const chatResponse = await mistral.chat.complete({
-      model: "mistral-small-latest", // Modèle rapide et efficace pour le JSON
+      model: "mistral-small-latest", 
       messages: [{ role: "user", content: prompt }],
-      responseFormat: { type: "json_object" }, // Force le mode JSON (très utile !)
+      responseFormat: { type: "json_object" }, 
     });
 
-    // 4. Parsing de la réponse (Sécurisé)
     const messageContent = chatResponse.choices?.[0].message.content;
 
     let rawContent = "";
 
     if (typeof messageContent === "string") {
-      // Cas standard : c'est du texte
       rawContent = messageContent;
     } else if (Array.isArray(messageContent)) {
-      // Cas complexe (ContentChunk[]) : on recolle les morceaux de texte s'il y en a
-      // (TypeScript sera content car on gère le tableau)
       rawContent = messageContent
         .map((chunk) => {
-          if ("text" in chunk) return chunk.text; // Si le chunk a du texte
+          if ("text" in chunk) return chunk.text; 
           return "";
         })
         .join("");
@@ -109,7 +101,6 @@ app.post("/api/posts", requireAuth, async (req, res) => {
 
     const aiResponse = JSON.parse(rawContent);
     console.log("🤖 MISTRAL A RÉPONDU :", aiResponse);
-    // --- Sauvegarde en BDD (Identique à avant) ---
     await prisma.translation.createMany({
       data: [
         { language: "EN", content: aiResponse.EN, postId: newPost.id },
@@ -164,18 +155,16 @@ app.get("/api/posts/:id", requireAuth, async (req, res) => {
     const postId = req.params.id;
     const clerkId = req.auth.userId;
 
-    // 1. Vérif user
     const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // 2. Récupérer le post ET ses traductions
     const post = await prisma.post.findUnique({
       where: {
         id: postId,
         userId: user.id, // SÉCURITÉ : On s'assure que le post appartient bien à l'user connecté
       },
       include: {
-        translations: true, // <--- C'est ici qu'on récupère la magie de l'IA
+        translations: true, 
       },
     });
 
