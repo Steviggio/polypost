@@ -1,6 +1,6 @@
 import { ClerkExpressWithAuth, StrictAuthProp } from "@clerk/clerk-sdk-node";
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import prisma from "../prisma/client";
+import prisma from "../lib/prisma";
 
 declare global {
   namespace Express {
