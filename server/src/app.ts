@@ -158,3 +158,34 @@ app.get("/api/posts", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
+
+app.get("/api/posts/:id", requireAuth, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const clerkId = req.auth.userId;
+
+    // 1. Vérif user
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // 2. Récupérer le post ET ses traductions
+    const post = await prisma.post.findUnique({
+      where: {
+        id: postId,
+        userId: user.id, // SÉCURITÉ : On s'assure que le post appartient bien à l'user connecté
+      },
+      include: {
+        translations: true, // <--- C'est ici qu'on récupère la magie de l'IA
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: "Post introuvable" });
+    }
+
+    res.json(post);
+  } catch (error) {
+    console.error("Erreur fetch post:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
