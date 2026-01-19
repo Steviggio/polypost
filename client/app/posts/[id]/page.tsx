@@ -20,7 +20,7 @@ interface PostDetail {
 }
 
 export default function PostDetailPage() {
-  const { id } = useParams(); 
+  const { id } = useParams();
   const { getToken } = useAuth();
   const router = useRouter();
 
@@ -35,7 +35,7 @@ export default function PostDetailPage() {
           `${process.env.NEXT_PUBLIC_API_URL}/api/posts/${id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         if (!res.ok) throw new Error("Post introuvable");
@@ -44,7 +44,7 @@ export default function PostDetailPage() {
         setPost(data);
       } catch (error) {
         console.error(error);
-        router.push("/"); 
+        router.push("/");
       } finally {
         setLoading(false);
       }
@@ -101,8 +101,8 @@ export default function PostDetailPage() {
                       {t.language === "EN"
                         ? "Anglais"
                         : t.language === "ES"
-                        ? "Espagnol"
-                        : "Portugais"}
+                          ? "Espagnol"
+                          : "Portugais"}
                     </span>
                   </div>
                   <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">

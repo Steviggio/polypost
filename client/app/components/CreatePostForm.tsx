@@ -11,15 +11,28 @@ export default function CreatePostForm({
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+
+    if (!isLoaded || !isSignedIn) {
+      alert("Veuillez patienter, connexion à Clerk en cours...");
+      return;
+    }
+
     setStatus("idle");
 
     try {
       const token = await getToken();
+
+      if (!token) {
+        console.error("Token est null malgré isSignedIn=true");
+        setStatus("error");
+        return;
+      }
+
+      console.log("Token envoyé :", token.substring(0, 10) + "..."); // Debug
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/posts`,
@@ -30,18 +43,18 @@ export default function CreatePostForm({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ content }),
-        }
+        },
       );
 
       if (!response.ok) {
-        throw new Error("Erreur lors de la création du post");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erreur serveur");
       }
 
       setContent("");
       setStatus("success");
       if (onPostCreated) onPostCreated();
       console.log("Post créé avec succès !");
-
     } catch (error) {
       console.error(error);
       setStatus("error");
