@@ -5,7 +5,11 @@ import { Request, Response } from "express";
 export const createPost = async (req: Request, res: Response) => {
   try {
     const { content } = req.body;
-    const clerkId = req.auth.userId;
+    const clerkId = req.auth?.userId;
+
+    if (!clerkId) {
+      return res.status(401).json({ error: "Non authentifié" });
+    }
 
     if (!content) return res.status(400).json({ error: "Contenu requis" });
 
@@ -123,7 +127,7 @@ export const getPostById = async (req: Request, res: Response) => {
     const post = await prisma.post.findUnique({
       where: {
         id: postId,
-        userId: user.id, 
+        userId: user.id,
       },
       include: {
         translations: true,
@@ -137,6 +141,33 @@ export const getPostById = async (req: Request, res: Response) => {
     res.json(post);
   } catch (error) {
     console.error("Erreur fetch post:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+export const deletePost = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const clerkId = req.auth.userId;
+
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const post = await prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+    if (post.userId !== user.id)
+      return res.status(403).json({ error: "Non autorisé" });
+
+    await prisma.post.delete({
+      where: { id },
+    });
+
+    res.json({ message: "Post supprimé avec succès" });
+  } catch (error) {
+    console.error("Erreur deletePost:", error);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };

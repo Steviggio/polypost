@@ -13,8 +13,10 @@ export const requireAuth = ClerkExpressWithAuth() as unknown as RequestHandler;
 export const syncUserToDb = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
+  console.log("🔒 Middleware Sync: Vérification...");
+
   const { userId, claims } = req.auth;
 
   if (!userId) {
