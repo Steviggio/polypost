@@ -2,11 +2,11 @@
 
 **Automatisation de posts LinkedIn multilingues via Mistral AI.**
 
-Ce projet est un PoC (Proof of Concept) minimaliste démontrant l'intégration de l'IA générative dans une architecture **Next.js 14** moderne. Il orchestre la création, la traduction automatique et la gestion d'utilisateurs sécurisée.
+Ce projet est un PoC (Proof of Concept) minimaliste démontrant l'intégration de l'IA générative dans une architecture **Next.js 16** moderne. Il orchestre la création, la traduction automatique et la gestion d'utilisateurs sécurisée.
 
 ## 🛠 Stack Technique | Teck Stack
 
-- **Frontend** : Next.js 14 (App Router), Tailwind CSS.
+- **Frontend** : Next.js 16 (App Router), Tailwind CSS.
 - **Backend** : Node.js, Express, Prisma ORM.
 - **Services** : Mistral AI (LLM), Clerk (Auth), PostgreSQL (Data).
 - **Ops** : Docker & Docker Compose.
